@@ -67,10 +67,39 @@ URL=$(parse_json "url")
 SCREEN_NUM=$(osascript -e "tell application \"System Events\" to return count of desktops")
 
 if [[ "$MEDIA_TYPE" == "video" ]]; then
-	echo "Today is a video: $URL"
-	osascript -e "display notification \"Today is a video, please click to view.\" with title \"APOD: $TITLE\" subtitle \"$URL\" sound name \"Glass\""
+	VIDEO_THUMB_URL=""
 
-elif [[ "$MEDIA_TYPE" == "image" ]]; then
+	if [[ "$URL" == *"youtube.com"* ]] || [[ "$URL" == *"youtu.be"* ]]; then
+		# Extract YouTube ID using Bash Regex
+		# Matches patterns like v=ID, embed/ID, or be/ID
+		if [[ "$URL" =~ (v/|be/|v=|embed/)([a-zA-Z0-9_-]{11}) ]]; then
+			VIDEO_ID="${BASH_REMATCH[2]}"
+			VIDEO_THUMB_URL="https://img.youtube.com/vi/$VIDEO_ID/maxresdefault.jpg"
+		fi
+
+	elif [[ "$URL" == *"vimeo.com"* ]]; then
+		# Extract Vimeo ID using Bash Regex
+		if [[ "$URL" =~ [0-9]{7,12} ]]; then
+			VIMEO_ID="${BASH_REMATCH[0]}"
+			# Fetch Vimeo thumbnail URL via its JSON API
+			VIMEO_JSON=$(fetch_data "https://vimeo.com/api/v2/video/$VIMEO_ID.json")
+			if [[ -n "$VIMEO_JSON" ]]; then
+				VIDEO_THUMB_URL=$(echo "$VIMEO_JSON" | osascript -l JavaScript -e "function run(argv) { return JSON.parse(argv[0])[0]['thumbnail_large']; }")
+			fi
+		fi
+	fi
+
+	# If thumb found, treat as image
+	if [[ -n "$VIDEO_THUMB_URL" ]]; then
+		echo "Video detected, using thumbnail: $VIDEO_THUMB_URL"
+		HDURL=$VIDEO_THUMB_URL
+		MEDIA_TYPE="image"
+	else
+		echo "No thumbnail found for video: $URL"
+		osascript -e "display notification \"Today is a video (no thumb found).\" with title \"APOD: $TITLE\" subtitle \"$URL\" sound name \"Glass\""
+	fi
+fi
+if [[ "$MEDIA_TYPE" == "image" ]]; then
 	TODAY_FILE="$TARGET_DIR/apod_${DATE}.jpg"
 	if [[ ! -f "$TODAY_FILE" ]]; then
 		echo "Downloading today's image: $DATE"
@@ -92,6 +121,8 @@ elif [[ "$MEDIA_TYPE" == "image" ]]; then
 	done
 
 	osascript -e "display notification \"Astronomy Picture of the Day\" with title \"$TITLE\" subtitle \"$EXPLANATION\"  sound name \"Glass\""
+elif [[ "$MEDIA_TYPE" == "video" ]]; then
+	: # Already handled in the video section above
 else
 	echo "Error! Today APOD is something weird."
 	#do somthing
