@@ -57,7 +57,7 @@ fetch_data() {
 
 # Fetch and Parse APOD Data
 echo "Fetching APOD data..."
-APOD_JSON=$(fetch_data "https://api.nasa.gov/planetary/apod?api_key=k9aW1Yl0MFp7IEdCPVKGn5IlRIiDCCiCOEJyw0op")
+APOD_JSON=$(fetch_data "https://api.nasa.gov/planetary/apod?api_key=?api_key=4CYMBD6RTyKJa7STGGgR6JST1UElLvGcYybscgWZ")
 
 if [[ -z "$APOD_JSON" ]]; then
 	echo "Error: Failed to fetch APOD data. Check your connection/proxy."
