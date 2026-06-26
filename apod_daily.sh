@@ -130,10 +130,10 @@ set_wallpaper() {
 			gsettings set org.gnome.desktop.background picture-uri-dark "file://$img_path"
 		fi
 
-	# KDE Plasma
+	# KDE Plasma (Wayland compatible fix attempt)
 	elif [[ "$DE_LOWER" == *"kde"* ]]; then
-		dbus-send --dest=org.kde.plasmashell --object-path=/PlasmaShell --method=org.kde.PlasmaShell.evaluateScript \
-			"var allDesktops = desktops(); var idx = $screen_idx - 1; if (idx >= 0 && idx < allDesktops.length) { var d = allDesktops[idx]; d.wallpaperPlugin = 'org.kde.image'; d.currentConfigGroup = Array('Wallpaper', 'org.kde.image', 'General'); d.writeConfig('Image', 'file://$img_path'); }" >/dev/null 2>&1
+		js_script="var allDesktops = desktops(); var idx = $screen_idx - 1; if (idx >= 0 && idx < allDesktops.length) { var d = allDesktops[idx]; d.wallpaperPlugin = 'org.kde.image'; d.currentConfigGroup = Array('Wallpaper', 'org.kde.image', 'General'); d.writeConfig('Image', 'file://$img_path'); }"
+		dbus-send --system --dest=org.kde.plasmashell --object-path=/PlasmaShell --method=org.kde.PlasmaShell.evaluateScript "${js_script}" >/dev/null 2>&1
 
 	# XFCE
 	elif [[ "$DE_LOWER" == *"xfce"* ]]; then
